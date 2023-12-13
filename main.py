@@ -61,22 +61,22 @@ def set_channel_min_profit_rate_constraint(problem, uk, dm, sr_list, min_profit_
   tm_sku_ids = [x for x in uk if dm[x]['channel_id'] == '天猫旗舰店']
   tm_sku_sales = pulp.lpSum([sr_list[id] * dm[id]['sku_price'] for id in tm_sku_ids])
   tm_sku_cost = pulp.lpSum([sr_list[id] * dm[id]['sku_cost'] for id in tm_sku_ids])
-  problem += tm_sku_cost * min_profit_rate_by_channel.get('天猫旗舰店') <= (tm_sku_sales - tm_sku_cost)
+  problem += tm_sku_sales * min_profit_rate_by_channel.get('天猫旗舰店') <= (tm_sku_sales - tm_sku_cost)
   # # 新天地旗舰店毛利率不低于 25%
   xtd_sku_ids = [x for x in uk if dm[x]['channel_id'] == '上海新天地旗舰店']
   xtd_sku_sales = pulp.lpSum([sr_list[id] * dm[id]['sku_price'] for id in xtd_sku_ids])
   xtd_sku_cost = pulp.lpSum([sr_list[id] * dm[id]['sku_cost'] for id in xtd_sku_ids])
-  problem += xtd_sku_cost * min_profit_rate_by_channel.get('上海新天地旗舰店') <= (xtd_sku_sales - xtd_sku_cost)
+  problem += xtd_sku_sales * min_profit_rate_by_channel.get('上海新天地旗舰店') <= (xtd_sku_sales - xtd_sku_cost)
   # # 大漂亮药妆毛利率不低于 15%
   dp_sku_ids = [x for x in uk if dm[x]['channel_id'] == '大漂亮药妆']
   dp_sku_sales = pulp.lpSum([sr_list[id] * dm[id]['sku_price'] for id in dp_sku_ids])
   dp_sku_cost = pulp.lpSum([sr_list[id] * dm[id]['sku_cost'] for id in dp_sku_ids])
-  problem += dp_sku_cost * min_profit_rate_by_channel.get('大漂亮药妆') <= (dp_sku_sales - dp_sku_cost)
+  problem += dp_sku_sales * min_profit_rate_by_channel.get('大漂亮药妆') <= (dp_sku_sales - dp_sku_cost)
   # # 李佳琦直播间毛利率不低于 20%
   ljq_sku_ids = [x for x in uk if dm[x]['channel_id'] == '李佳琦直播间']
   ljq_sku_sales = pulp.lpSum([sr_list[id] * dm[id]['sku_price'] for id in ljq_sku_ids])
   ljq_sku_cost = pulp.lpSum([sr_list[id] * dm[id]['sku_cost'] for id in ljq_sku_ids])
-  problem += ljq_sku_cost * min_profit_rate_by_channel.get('李佳琦直播间') <= (ljq_sku_sales - ljq_sku_cost)
+  problem += ljq_sku_sales * min_profit_rate_by_channel.get('李佳琦直播间') <= (ljq_sku_sales - ljq_sku_cost)
   return problem
 
 def set_channel_revenue_constraint(problem, uk, dm, sr_list, min_revenue_by_channel):
@@ -189,7 +189,7 @@ def linear_optimize(**kwargs):
     '大漂亮药妆': 0.15,
     '李佳琦直播间': 0.2,
   })
-  min_new_sku_portion_by_channel = kwargs.get('min_sku_portion_by_channel', {
+  min_new_sku_portion_by_channel = kwargs.get('min_new_sku_portion_by_channel', {
     '天猫旗舰店': 0.2,
     '上海新天地旗舰店': 0.3,
     '大漂亮药妆': 0.05,
@@ -213,7 +213,7 @@ def linear_optimize(**kwargs):
   problem = set_channel_new_sku_constraint(problem, uk, dm, sr_list, new_sku_ids, min_new_sku_portion_by_channel)
   problem = set_channel_revenue_constraint(problem, uk, dm, sr_list, min_revenue_by_channel)
   problem = set_kit_constraint(problem, sr_list)
-  solver = pulp.get_solver('PULP_CBC_CMD', timeLimit=60)
+  solver = pulp.get_solver('PULP_CBC_CMD', timeLimit=5)
   problem.solve(solver=solver)
   # 输出结果
   if pulp.LpStatus[problem.status] == 'Optimal':
@@ -227,16 +227,20 @@ def linear_optimize(**kwargs):
         '定价': dm[id]['sku_price'],
         '销售额': sr_list[id].value() * dm[id]['sku_price'],
         '渠道': dm[id]['channel_id'],
+        '渠道类型': dm[id]['channel_type'],
+        '成本': dm[id]['sku_cost'],
       })
-    result = pd.DataFrame(result)
-    print(result[result['qty'] > 0])
+    result_df = pd.DataFrame(result)
+    print(result_df[result_df['qty'] > 0])
     # print('Total Revenue: ', pd.DataFrame(result)['合计'].sum())
     print(f"Total Revenue: {pulp.value(problem.objective)}")
     # print(f"Total Cost: {pulp.value(total_cost)}")
     # assert_new_portion(result)
-    print(result.groupby('渠道')['销售额'].sum())
+    print(result_df.groupby('渠道')['销售额'].sum())
+    return True, result, pulp.value(problem.objective)
   else:
     print("No optimal solution found.")
+    return False, None, None
 
 if __name__ == '__main__':
   linear_optimize()
