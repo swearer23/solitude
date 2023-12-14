@@ -1,26 +1,29 @@
-import random
 import pandas as pd
 
-def gen_sku(amount):
-  skus = []
-  for i in range(amount):
-    cost_seed = random.randint(1, 9)
-    cost = random.randint(1, 100) * cost_seed
-    profit_rate = random.random() + 1
-    storage = random.randint(100, 1000)
-    skus.append({
-      'sku_id': i,
-      'sku_name': 'sku_name_' + str(i),
-      'sku_cost': cost,
-      'sku_price': cost * profit_rate,
-      'sku_profit_rate': profit_rate,
-      'sku_profit': cost * profit_rate - cost,
-      'sku_storage': storage
-    })
-  df = pd.DataFrame(skus)
-  df.to_csv('data/sku.csv', index=False)
-  return df
+sku = pd.read_excel('raw_docs/md.xlsx', sheet_name='物料基本信息')
+sku.index = sku['物料']
 
-if __name__ == '__main__':
-  df = gen_sku(1000)
-  print(df)
+data2020 = pd.read_excel('raw_docs/2020.xlsx')
+data2020.columns = [x.strip() for x in data2020.columns]
+data2021 = pd.read_excel('raw_docs/2021.xlsx')
+data2021.columns = [x.strip() for x in data2021.columns]
+
+sales = []
+
+for bom_id in sku['物料'].values.tolist():
+  sales2020 = data2020[
+    (data2020['物料'] == bom_id)
+    &
+    (data2020['交易类型'] == '销售出库')
+  ]['数量'].sum()
+  sales2021 = data2021[
+    (data2021['物料'] == bom_id)
+    &
+    (data2021['交易类型'] == '销售出库')
+  ]['数量'].sum()
+  sales.append(-(sales2020 + sales2021))
+  
+sku['history_sales'] = sales 
+sku['weight'] = sku['history_sales'] / sku['history_sales'].sum()
+
+sku.to_csv('data/sku.csv', index=False, encoding='utf-8-sig')

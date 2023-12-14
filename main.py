@@ -1,58 +1,75 @@
 import pulp
 import pandas as pd
+import math
 
-def set_kit_constraint(problem, sr_list):
+dp_kit_sku_ids = [
+  # '000000003103900055',
+  # '1006A02010',
+  # '1302A00034',
+  # '3105A11293', 21 年无参考销售权重
+  # '3105A13024',
+  # '3105A16253'
+  '1006A01749',
+  '1302A00033',
+  '1302A00034',
+  '3808A09414',
+  '3808A10803'
+]
+
+ljq_kit_sku_ids = [
+  # '3808A10534',
+  # '3808A11359',
+  # '3808A11369',
+  # '3808A11878'
+  '1302A00022',
+  '1006A01757',
+  '1302A00023',
+  '3808A10806',
+  '3808A10863'
+]
+
+def set_kit_constraint(problem, uk, dm, sr_list):
   # 套件约束
   # 大漂亮套件约束
-  dp_kit_sku_ids = [
-    '000000003103900055',
-    '1006A02010',
-    '1302A00034',
-    '3105A11293',
-    '3105A13024',
-    '3105A16253'
-  ]
-  dp_kit_sku_ids = [f'{x}_大漂亮药妆' for x in dp_kit_sku_ids]
-  first_sku_id = dp_kit_sku_ids[0]
-  for id in dp_kit_sku_ids[1:]:
+  dp_sku_ids = dp_kit_sku_ids
+  dp_sku_ids = [f'{x}_大漂亮药妆' for x in dp_sku_ids]
+  first_sku_id = dp_sku_ids[0]
+  for id in dp_sku_ids[1:]:
     problem += sr_list[id] == sr_list[first_sku_id]
+    # problem += sr_list[id] >= 3
 
   # 李佳琦套件约束
-  ljq_kit_sku_ids = [
-    '3808A10534',
-    '3808A11359',
-    '3808A11369',
-    '3808A11878'
-  ]
-  ljq_kit_sku_ids = [f'{x}_李佳琦直播间' for x in ljq_kit_sku_ids]
-  first_sku_id = ljq_kit_sku_ids[0]
-  for id in ljq_kit_sku_ids[1:]:
+  ljq_sku_ids = ljq_kit_sku_ids
+  ljq_sku_ids = [f'{x}_李佳琦直播间' for x in ljq_sku_ids]
+  first_sku_id = ljq_sku_ids[0]
+  for id in ljq_sku_ids[1:]:
     problem += sr_list[id] == sr_list[first_sku_id]
+    # problem += sr_list[id] >= 1
+
   return problem
 
-def set_channel_new_sku_constraint(problem, uk, dm, sr_list, new_sku_ids, min_new_sku_portion_by_channel):
+def set_channel_new_sku_constraint(problem, uk, dm, sr_list, new_sku_revenue, min_new_sku_portion_by_channel):
   # 渠道新品推广要求
-  total_new_sku_sales = pulp.lpSum([sr_list[id] * dm[id]['sku_price'] for id in new_sku_ids])
   # 天猫旗舰店新品占比不低于 20%
-  tm_sku_ids = [x for x in uk if dm[x]['channel_id'] == '天猫旗舰店']
-  tm_new_sku_ids = [x for x in tm_sku_ids if dm[x]['is_new'] == 'Y' and dm[x]['channel_id'] == '天猫旗舰店']
+  tm_new_sku_portion = min_new_sku_portion_by_channel.get('天猫旗舰店', 0.2)
+  tm_new_sku_ids = [x for x in uk if dm[x]['is_new'] == 'Y' and dm[x]['channel_id'] == '天猫旗舰店']
   tm_new_sku_sales = pulp.lpSum([sr_list[id] * dm[id]['sku_price'] for id in tm_new_sku_ids])
-  problem += tm_new_sku_sales >= min_new_sku_portion_by_channel.get('天猫旗舰店', 0.2) * total_new_sku_sales
+  problem += tm_new_sku_sales >= tm_new_sku_portion * new_sku_revenue 
   # 新天地旗舰店新品占比不低于 30%
-  xtd_sku_ids = [x for x in uk if dm[x]['channel_id'] == '上海新天地旗舰店']
-  xtd_new_sku_ids = [x for x in xtd_sku_ids if dm[x]['is_new'] == 'Y' and dm[x]['channel_id'] == '上海新天地旗舰店']
+  xtd_new_sku_portion = min_new_sku_portion_by_channel.get('上海新天地旗舰店', 0.3)
+  xtd_new_sku_ids = [x for x in uk if dm[x]['is_new'] == 'Y' and dm[x]['channel_id'] == '上海新天地旗舰店']
   xtd_new_sku_sales = pulp.lpSum([sr_list[id] * dm[id]['sku_price'] for id in xtd_new_sku_ids])
-  problem += xtd_new_sku_sales >= min_new_sku_portion_by_channel.get('上海新天地旗舰店', 0.3) * total_new_sku_sales 
+  problem += xtd_new_sku_sales >= xtd_new_sku_portion * new_sku_revenue 
   # 大漂亮药妆新品占比不低于 5%
-  dp_sku_ids = [x for x in uk if dm[x]['channel_id'] == '大漂亮药妆']
-  dp_new_sku_ids = [x for x in dp_sku_ids if dm[x]['is_new'] == 'Y' and dm[x]['channel_id'] == '大漂亮药妆']
+  dp_new_sku_portion = min_new_sku_portion_by_channel.get('大漂亮药妆', 0.05)
+  dp_new_sku_ids = [x for x in uk if dm[x]['is_new'] == 'Y' and dm[x]['channel_id'] == '大漂亮药妆']
   dp_new_sku_sales = pulp.lpSum([sr_list[id] * dm[id]['sku_price'] for id in dp_new_sku_ids])
-  problem += dp_new_sku_sales >= min_new_sku_portion_by_channel.get('大漂亮药妆', 0.05) * total_new_sku_sales
+  problem += dp_new_sku_sales >= dp_new_sku_portion * new_sku_revenue
   # 李佳琦直播间新品占比不低于 30%
-  ljq_sku_ids = [x for x in uk if dm[x]['channel_id'] == '李佳琦直播间']
-  ljq_new_sku_ids = [x for x in ljq_sku_ids if dm[x]['is_new'] == 'Y' and dm[x]['channel_id'] == '李佳琦直播间']
+  ljq_new_sku_portion = min_new_sku_portion_by_channel.get('李佳琦直播间', 0.3)
+  ljq_new_sku_ids = [x for x in uk if dm[x]['is_new'] == 'Y' and dm[x]['channel_id'] == '李佳琦直播间']
   ljq_new_sku_sales = pulp.lpSum([sr_list[id] * dm[id]['sku_price'] for id in ljq_new_sku_ids])
-  problem += ljq_new_sku_sales >= min_new_sku_portion_by_channel.get('李佳琦直播间', 0.3) * total_new_sku_sales
+  problem += ljq_new_sku_sales >= ljq_new_sku_portion * new_sku_revenue
   return problem
 
 def set_channel_min_profit_rate_constraint(problem, uk, dm, sr_list, min_profit_rate_by_channel):
@@ -113,25 +130,27 @@ def set_hot_sku_constraint(problem, uk, dm, sr_list, portion=0.1):
   problem += hot_sku_sales >= portion * pulp.lpSum([sr_list[id] * dm[id]['sku_price'] for id in uk])
   return problem
 
-def set_new_sku_constraint(problem, uk, dm, sr_list, portion=0.1):
+def set_new_sku_constraint(problem, uk, dm, sr_list, revenue):
   # 新品占比大于15%
   new_sku_ids = [x for x in uk if dm[x]['is_new'] == 'Y']
   new_sku_sales = pulp.lpSum([sr_list[id] * dm[id]['sku_price'] for id in new_sku_ids])
-  problem += new_sku_sales >= portion * pulp.lpSum([
-    sr_list[id] * dm[id]['sku_price']
-    for id in uk 
-  ])
+  problem += new_sku_sales >= revenue
   return problem, new_sku_ids
 
-def set_storage_constraint(problem, uk, dm, sr_list, sku_map):
+def set_history_sales_constraint(problem, uk, dm, sr_list, sku_map):
+  # 历史销量约束
   for id in uk:
     same_sku_uk = [x for x in uk if dm[x]['bom_id'] == dm[id]['bom_id']]
-    total_sales = pulp.lpSum([sr_list[x] for x in same_sku_uk])
+    sku_total_sales = pulp.lpSum([sr_list[x] for x in same_sku_uk])
     sku_id = dm[id]['bom_id']
-    problem += total_sales <= sku_map[sku_id]['库存']
+    upper_limit = sku_map[sku_id]['history_sales'] * 1.5
+    lower_limit = sku_map[sku_id]['history_sales'] * 0.1
+    problem += sku_total_sales <= math.ceil(upper_limit) + 1
+    problem += sku_total_sales >= math.ceil(lower_limit)
   return problem
 
-def set_target(uk, dm):
+def set_target(uk, dm, revenue_target):
+  print(revenue_target)
   # 创建问题
   problem = pulp.LpProblem("Maximize Sales Revenue", pulp.LpMaximize)
 
@@ -143,6 +162,10 @@ def set_target(uk, dm):
     sr_list[id] * dm[id]['sku_price']
     for id in uk
   ]), "Total Revenue"
+  problem += revenue_target[0] <= sum([
+    sr_list[id] * dm[id]['sku_price']
+    for id in uk
+  ]) <= revenue_target[1]
   return problem, sr_list
 
 def load_data():
@@ -156,6 +179,10 @@ def load_data():
   for index, channel_row in channel_list.iterrows():
     for index, sku_row in sku_list.iterrows():
       if not is_channel_online(channel_row['渠道大类']) and sku_row['是否仅线上销售'] == 'Y':
+        continue
+      if channel_row['渠道名称'] == '大漂亮药妆' and sku_row['物料'] not in dp_kit_sku_ids:
+        continue
+      if channel_row['渠道名称'] == '李佳琦直播间' and sku_row['物料'] not in ljq_kit_sku_ids:
         continue
       data.append({
         'unique_id': f"{sku_row['物料']}_{channel_row['渠道名称']}",
@@ -180,7 +207,8 @@ def load_data():
   return dm, uk, sku_map
 
 def linear_optimize(**kwargs):
-  new_sku_portion = kwargs.get('new_sku_portion', 0.15)
+  revenue_target = kwargs.get('revenue_target')
+  new_sku_revenue = kwargs.get('new_sku_revenue', 10000000)
   hot_sku_portion = kwargs.get('hot_sku_portion', 0.1)
   dtc_sku_portion = kwargs.get('dtc_sku_portion', 0.6)
   min_profit_rate_by_channel = kwargs.get('min_profit_rate_by_channel', {
@@ -202,17 +230,17 @@ def linear_optimize(**kwargs):
     '李佳琦直播间': 2000000,
   })
   dm, uk, sku_map = load_data()
-  problem, sr_list = set_target(uk, dm)
-  problem = set_storage_constraint(problem, uk, dm, sr_list, sku_map)
+  problem, sr_list = set_target(uk, dm, revenue_target)
+  problem = set_history_sales_constraint(problem, uk, dm, sr_list, sku_map)
   # 约束条件
   # 爆款占比大于10%
-  problem, new_sku_ids = set_new_sku_constraint(problem, uk, dm, sr_list, portion=new_sku_portion)
+  problem, new_sku_ids = set_new_sku_constraint(problem, uk, dm, sr_list, revenue=new_sku_revenue)
   problem = set_hot_sku_constraint(problem, uk, dm, sr_list, portion=hot_sku_portion)
   problem = set_dtc_constraint(problem, uk, dm, sr_list, portion=dtc_sku_portion)
   problem = set_channel_min_profit_rate_constraint(problem, uk, dm, sr_list, min_profit_rate_by_channel)
-  problem = set_channel_new_sku_constraint(problem, uk, dm, sr_list, new_sku_ids, min_new_sku_portion_by_channel)
+  problem = set_channel_new_sku_constraint(problem, uk, dm, sr_list, new_sku_revenue, min_new_sku_portion_by_channel)
   problem = set_channel_revenue_constraint(problem, uk, dm, sr_list, min_revenue_by_channel)
-  problem = set_kit_constraint(problem, sr_list)
+  problem = set_kit_constraint(problem, uk, dm, sr_list)
   solver = pulp.get_solver('PULP_CBC_CMD', timeLimit=5)
   problem.solve(solver=solver)
   # 输出结果

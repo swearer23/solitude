@@ -10,7 +10,6 @@ CORS(app, resources={"*": {"origins": "*"}})
 @app.route('/optimize', methods=['POST', 'GET'])
 def optimize():
     payload = request.get_json()
-    print(payload)
     res, sales, revenue = linear_optimize(**payload)
     if res:
         return jsonify({

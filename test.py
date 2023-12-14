@@ -10,7 +10,13 @@ xb = pulp.LpVariable("Product_B", lowBound=0, cat='Continuous')
 # 设置目标函数
 problem += xa * 2 + xb * 3
 
-# 添加约束条件
+# # 添加约束条件
+# total = xa + xb
+problem += xa == xb
+# problem += total * 0.3 <= xa
+# problem += xa <= total * 0.8
+# problem += total * 0.2 <= xb
+# problem += xb <= total * 0.5
 problem += 1 * xa + 2 * xb <= 8  # 生产时间限制
 problem += 2 * xa + 1 * xb <= 10  # 原材料 X 限制
 
