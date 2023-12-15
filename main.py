@@ -1,50 +1,28 @@
 import pulp
 import pandas as pd
 import math
-
-dp_kit_sku_ids = [
-  # '000000003103900055',
-  # '1006A02010',
-  # '1302A00034',
-  # '3105A11293', 21 年无参考销售权重
-  # '3105A13024',
-  # '3105A16253'
-  '1006A01749',
-  '1302A00033',
-  '1302A00034',
-  '3808A09414',
-  '3808A10803'
-]
-
-ljq_kit_sku_ids = [
-  # '3808A10534',
-  # '3808A11359',
-  # '3808A11369',
-  # '3808A11878'
-  '1302A00022',
-  '1006A01757',
-  '1302A00023',
-  '3808A10806',
-  '3808A10863'
-]
+from const import dp_kit_sku_ids, ljq_kit_sku_ids
+from load_data import load_data
+from set_target import set_target
+from split_to_month import set_monthly_constraint
 
 def set_kit_constraint(problem, uk, dm, sr_list):
   # 套件约束
   # 大漂亮套件约束
   dp_sku_ids = dp_kit_sku_ids
   dp_sku_ids = [f'{x}_大漂亮药妆' for x in dp_sku_ids]
-  first_sku_id = dp_sku_ids[0]
-  for id in dp_sku_ids[1:]:
-    problem += sr_list[id] == sr_list[first_sku_id]
-    # problem += sr_list[id] >= 3
+  for month in range(1, 13):
+    first_sku_id = f'{dp_sku_ids[0]}_month_{month}'
+    for id in dp_sku_ids[1:]:
+      problem += sr_list[f'{id}_month_{month}'] == sr_list[first_sku_id]
 
   # 李佳琦套件约束
   ljq_sku_ids = ljq_kit_sku_ids
   ljq_sku_ids = [f'{x}_李佳琦直播间' for x in ljq_sku_ids]
-  first_sku_id = ljq_sku_ids[0]
-  for id in ljq_sku_ids[1:]:
-    problem += sr_list[id] == sr_list[first_sku_id]
-    # problem += sr_list[id] >= 1
+  for month in range(1, 13):
+    first_sku_id = f'{ljq_sku_ids[0]}_month_{month}'
+    for id in ljq_sku_ids[1:]:
+      problem += sr_list[f'{id}_month_{month}'] == sr_list[first_sku_id]
 
   return problem
 
@@ -144,67 +122,10 @@ def set_history_sales_constraint(problem, uk, dm, sr_list, sku_map):
     sku_total_sales = pulp.lpSum([sr_list[x] for x in same_sku_uk])
     sku_id = dm[id]['bom_id']
     upper_limit = sku_map[sku_id]['history_sales'] * 1.5
-    lower_limit = sku_map[sku_id]['history_sales'] * 0.1
+    lower_limit = sku_map[sku_id]['history_sales'] * 0.5
     problem += sku_total_sales <= math.ceil(upper_limit) + 1
     problem += sku_total_sales >= math.ceil(lower_limit)
   return problem
-
-def set_target(uk, dm, revenue_target):
-  print(revenue_target)
-  # 创建问题
-  problem = pulp.LpProblem("Maximize Sales Revenue", pulp.LpMaximize)
-
-  # 创建变量，sr -> solver result
-  sr_list = pulp.LpVariable.dicts("SKU_Sales", uk, lowBound=0, cat='Integer')  # 每个SKU的销售数量}
-
-  # 设置目标函数
-  problem += sum([
-    sr_list[id] * dm[id]['sku_price']
-    for id in uk
-  ]), "Total Revenue"
-  problem += revenue_target[0] <= sum([
-    sr_list[id] * dm[id]['sku_price']
-    for id in uk
-  ]) <= revenue_target[1]
-  return problem, sr_list
-
-def load_data():
-  sku_list = pd.read_csv('data/sku.csv')
-  channel_list = pd.read_csv('data/channel.csv')
-  data = []
-
-  def is_channel_online(channel_type):
-    return '线上' in channel_type
-
-  for index, channel_row in channel_list.iterrows():
-    for index, sku_row in sku_list.iterrows():
-      if not is_channel_online(channel_row['渠道大类']) and sku_row['是否仅线上销售'] == 'Y':
-        continue
-      if channel_row['渠道名称'] == '大漂亮药妆' and sku_row['物料'] not in dp_kit_sku_ids:
-        continue
-      if channel_row['渠道名称'] == '李佳琦直播间' and sku_row['物料'] not in ljq_kit_sku_ids:
-        continue
-      data.append({
-        'unique_id': f"{sku_row['物料']}_{channel_row['渠道名称']}",
-        'bom_id': sku_row['物料'],
-        'channel_id': channel_row['渠道名称'],
-        'channel_type': channel_row['渠道大类'],
-        'sku_cost': sku_row['成本'],
-        'sku_price': sku_row['成本'] * (1 + sku_row['最低毛利要求']),
-        'is_new': sku_row['是否新品'],
-        'is_hot': sku_row['是否爆款'],
-      })
-
-  df = pd.DataFrame(data)
-
-  # 将SKU List转为字典，方便后续使用 
-  sku_map = sku_list.set_index('物料').to_dict(orient='index')
-  # sku_ids = sku_list['物料'].tolist()
-
-  # 将SKU-Channel List转为字典，方便后续使用
-  dm = df.set_index('unique_id').to_dict(orient='index')
-  uk = df['unique_id'].tolist()
-  return dm, uk, sku_map
 
 def linear_optimize(**kwargs):
   revenue_target = kwargs.get('revenue_target')
@@ -231,17 +152,18 @@ def linear_optimize(**kwargs):
   })
   dm, uk, sku_map = load_data()
   problem, sr_list = set_target(uk, dm, revenue_target)
-  problem = set_history_sales_constraint(problem, uk, dm, sr_list, sku_map)
+  # problem = set_history_sales_constraint(problem, uk, dm, sr_list, sku_map)
   # 约束条件
   # 爆款占比大于10%
   problem, new_sku_ids = set_new_sku_constraint(problem, uk, dm, sr_list, revenue=new_sku_revenue)
   problem = set_hot_sku_constraint(problem, uk, dm, sr_list, portion=hot_sku_portion)
   problem = set_dtc_constraint(problem, uk, dm, sr_list, portion=dtc_sku_portion)
+  problem = set_monthly_constraint(problem, uk, dm, sr_list)
   problem = set_channel_min_profit_rate_constraint(problem, uk, dm, sr_list, min_profit_rate_by_channel)
   problem = set_channel_new_sku_constraint(problem, uk, dm, sr_list, new_sku_revenue, min_new_sku_portion_by_channel)
   problem = set_channel_revenue_constraint(problem, uk, dm, sr_list, min_revenue_by_channel)
   problem = set_kit_constraint(problem, uk, dm, sr_list)
-  solver = pulp.get_solver('PULP_CBC_CMD', timeLimit=5)
+  solver = pulp.get_solver('PULP_CBC_CMD', timeLimit=600)
   problem.solve(solver=solver)
   # 输出结果
   if pulp.LpStatus[problem.status] == 'Optimal':
@@ -257,6 +179,7 @@ def linear_optimize(**kwargs):
         '渠道': dm[id]['channel_id'],
         '渠道类型': dm[id]['channel_type'],
         '成本': dm[id]['sku_cost'],
+        'month': dm[id]['month'],
       })
     result_df = pd.DataFrame(result)
     print(result_df[result_df['qty'] > 0])
@@ -265,9 +188,16 @@ def linear_optimize(**kwargs):
     # print(f"Total Cost: {pulp.value(total_cost)}")
     # assert_new_portion(result)
     print(result_df.groupby('渠道')['销售额'].sum())
+
+    for month in range(1, 13):
+      total = sum([sr_list[x].value() * dm[x]['sku_price'] for x in uk])
+      monthly = sum([sr_list[x].value() * dm[x]['sku_price'] for x in uk if dm[x]['month'] == month])
+      print(f"Month {month} Revenue: {monthly}, Portion: {monthly / total}")
     return True, result, pulp.value(problem.objective)
   else:
     print("No optimal solution found.")
+    print("Solver status:", problem.solver)
+    print("Solver message:", pulp.LpSolverDefault.msg)
     return False, None, None
 
 if __name__ == '__main__':
