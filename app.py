@@ -9,9 +9,9 @@ CORS(app, resources={"*": {"origins": "*"}})
 
 @app.route('/optimize', methods=['POST', 'GET'])
 def optimize():
-    import json
-    resp = json.loads(open('raw_docs/mock.json', 'r').read())
-    return jsonify(resp), 200
+    # import json
+    # resp = json.loads(open('raw_docs/mock.json', 'r').read())
+    # return jsonify(resp), 200
     payload = request.get_json()
     res, sales, revenue = linear_optimize(**payload)
     if res:

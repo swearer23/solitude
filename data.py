@@ -17,6 +17,7 @@ def bom_sales_weight_monthly(sku_all, ref):
       else:
         sales.append(-ref_record['数量'].sum())
     sku['history_sales'] = sales
+    sku['weight'] = sku['history_sales'] / sku['history_sales'].sum()
     sku['month'] = month
     sku = sku[sku['history_sales'] != 0]
     sku['物料'] = sku['物料'].apply(lambda x: x.strip()).astype(str)
@@ -29,7 +30,6 @@ def bom_sales_weight_anually(sku, ref):
   sales = []
 
   for bom_id in sku['物料'].values.tolist():
-    print(bom_id)
     sales2021 = ref[
       (ref['物料'] == bom_id)
       &
@@ -38,7 +38,7 @@ def bom_sales_weight_anually(sku, ref):
     sales.append(-sales2021)
 
   # sku['物料'] = sku['物料'].apply(lambda x: x.strip()).astype(str)
-  sku['history_sales'] = sales 
+  sku['history_sales'] = sales
   sku['weight'] = sku['history_sales'] / sku['history_sales'].sum()
   sku.to_csv('data/annual.sku.csv', index=False, encoding='utf-8-sig')
   return sku

@@ -11,6 +11,6 @@ def set_target(uk, dm, revenue_target):
     sr_list[id] * dm[id]['sku_price']
     for id in uk
   ]), "Total Revenue"
-  # problem += revenue_target[0] <= problem.objective <= revenue_target[1]
-  problem += problem.objective <= 25000000000
+  problem += problem.objective <= revenue_target
+  # problem += problem.objective <= 250000000
   return problem, sr_list

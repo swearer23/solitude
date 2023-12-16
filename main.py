@@ -163,7 +163,7 @@ def linear_optimize(**kwargs):
   problem = set_channel_new_sku_constraint(problem, uk, dm, sr_list, new_sku_revenue, min_new_sku_portion_by_channel)
   problem = set_channel_revenue_constraint(problem, uk, dm, sr_list, min_revenue_by_channel)
   problem = set_kit_constraint(problem, uk, dm, sr_list)
-  solver = pulp.get_solver('PULP_CBC_CMD', timeLimit=600)
+  solver = pulp.get_solver('PULP_CBC_CMD', timeLimit=60)
   problem.solve(solver=solver)
   # 输出结果
   if pulp.LpStatus[problem.status] == 'Optimal':
