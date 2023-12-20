@@ -152,18 +152,23 @@ def linear_optimize(**kwargs):
   })
   dm, uk, sku_map = load_data()
   problem, sr_list = set_target(uk, dm, revenue_target)
-  # problem = set_history_sales_constraint(problem, uk, dm, sr_list, sku_map)
-  # 约束条件
-  # 爆款占比大于10%
+  # 设置约束，新品销售额
   problem, new_sku_ids = set_new_sku_constraint(problem, uk, dm, sr_list, revenue=new_sku_revenue)
+  # 设置约束，根据SKU历史销量预估未来销量
   problem = set_hot_sku_constraint(problem, uk, dm, sr_list, portion=hot_sku_portion)
+  # 设置约束，DTC占比
   problem = set_dtc_constraint(problem, uk, dm, sr_list, portion=dtc_sku_portion)
+  # 设置约束，每月历史销量约束
   problem = set_monthly_constraint(problem, uk, dm, sr_list)
+  # 设置约束，各渠道利润率约束
   problem = set_channel_min_profit_rate_constraint(problem, uk, dm, sr_list, min_profit_rate_by_channel)
+  # 设置约束，各渠道新品销售额占比约束
   problem = set_channel_new_sku_constraint(problem, uk, dm, sr_list, new_sku_revenue, min_new_sku_portion_by_channel)
+  # 设置约束，各渠道销售额约束
   problem = set_channel_revenue_constraint(problem, uk, dm, sr_list, min_revenue_by_channel)
+  # 设置约束，套件销售
   problem = set_kit_constraint(problem, uk, dm, sr_list)
-  solver = pulp.get_solver('PULP_CBC_CMD', timeLimit=60)
+  solver = pulp.get_solver('PULP_CBC_CMD', timeLimit=600)
   problem.solve(solver=solver)
   # 输出结果
   if pulp.LpStatus[problem.status] == 'Optimal':

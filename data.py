@@ -1,4 +1,5 @@
 import pandas as pd
+import random
 
 def bom_sales_weight_monthly(sku_all, ref):
   ret = []
@@ -51,6 +52,10 @@ sku = pd.read_excel('raw_docs/md.xlsx', sheet_name='物料基本信息')
 # sku['物料'] = sku['物料'].astype(str)
 # sku['物料'] = sku['物料'].apply(lambda x: x.replace('00000000', ''))
 sku.index = sku['物料']
+for idx, row in sku.iterrows():
+  prob = random.random()
+  if prob < 0.1:
+    sku.loc[idx, '是否新品'] = 'Y'
 
 ref = pd.read_excel('raw_docs/2020.xlsx')
 ref.columns = [x.strip() for x in ref.columns]
