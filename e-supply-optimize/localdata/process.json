@@ -1,0 +1,164 @@
+[
+  {
+    "id": 1,
+    "init_power": 3000,
+    "work_power": 13500,
+    "work_duration": 24,
+    "steps": [
+      {
+        "target_power": 8500,
+        "duration": 11
+      },
+      {
+        "target_power": 13500,
+        "duration": 5
+      }
+    ]
+  }, {
+    "id": 2,
+    "init_power": 3000,
+    "work_duration": 21,
+    "steps": [
+      {
+        "target_power": 4750,
+        "duration": 6
+      },
+      {
+        "target_power": 7750,
+        "duration": 6
+      },
+      {
+        "target_power": 13000,
+        "duration": 7
+      }
+    ]
+  }, {
+    "id": 3,
+    "init_power": 4000,
+    "work_duration": 17,
+    "steps": [
+      {
+        "target_power": 6500,
+        "duration": 6
+      },
+      {
+        "target_power": 11000,
+        "duration": 6
+      },
+      {
+        "target_power": 12500,
+        "duration": 2
+      }
+    ]
+  }, {
+    "id": 4,
+    "init_power": 4000,
+    "work_duration": 15,
+    "steps": [
+      {
+        "target_power": 6000,
+        "duration": 5
+      },
+      {
+        "target_power": 8000,
+        "duration": 6
+      },
+      {
+        "target_power": 9050,
+        "duration": 7
+      },
+      {
+        "target_power": 10400,
+        "duration": 6
+      },
+      {
+        "target_power": 12500,
+        "duration": 3
+      }
+    ]
+  }, {
+    "id": 5,
+    "init_power": 4500,
+    "work_duration": 20,
+    "steps": [
+      {
+        "target_power": 6800,
+        "duration": 4
+      },
+      {
+        "target_power": 8500,
+        "duration": 4
+      },
+      {
+        "target_power": 14000,
+        "duration": 3
+      }
+    ]
+  }, {
+    "id": 6,
+    "init_power": 3500,
+    "work_duration": 19,
+    "steps": [
+      {
+        "target_power": 6500,
+        "duration": 6
+      },
+      {
+        "target_power": 9800,
+        "duration": 11
+      },
+      {
+        "target_power": 13500,
+        "duration": 7
+      }
+    ]
+  }, {
+    "id": 7,
+    "init_power": 3000,
+    "work_duration": 20,
+    "steps": [
+      {
+        "target_power": 4700,
+        "duration": 6
+      },
+      {
+        "target_power": 7750,
+        "duration": 15
+      },
+      {
+        "target_power": 9250,
+        "duration": 3
+      },
+      {
+        "target_power": 11650,
+        "duration": 3
+      },
+      {
+        "target_power": 13000,
+        "duration": 2
+      }
+    ]
+  }, {
+    "id": 8,
+    "init_power": 7000,
+    "work_duration": 20,
+    "steps": [
+      {
+        "target_power": 13000,
+        "duration": 7
+      },
+      {
+        "target_power": 20200,
+        "duration": 6
+      },
+      {
+        "target_power": 20200,
+        "duration": 4
+      },
+      {
+        "target_power": 35000,
+        "duration": 1
+      }
+    ]
+  }
+]
