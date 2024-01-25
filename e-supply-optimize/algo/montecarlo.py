@@ -86,20 +86,26 @@ def optimize_electric_cost(hourly_prices, processes):
   progress_bar = tqdm(total=epoch)
   m = Manager()
   queue = m.Queue()
-  # p = Process(target=concurrent_run_once, args=(queue, hourly_prices, processes))
-  # p.start()
+  p = Process(target=concurrent_run_once, args=(queue, hourly_prices, processes))
+  p.start()
+  while True:
+    if queue.empty():
+      sleep(1)
+      continue
+    best = select_best(queue.get(), best)
+    print(best)
   
-  while i < epoch:
-    pool = Pool(cpu_count())
-    monte_carlo_res = pool.map(
-      run_once, 
-      [(queue, hourly_prices, processes)] * 10000
-    )
+  # while i < epoch:
+  #   pool = Pool(cpu_count())
+  #   monte_carlo_res = pool.map(
+  #     run_once, 
+  #     [(queue, hourly_prices, processes)] * 10000
+  #   )
 
     # best = select_best(queue.get(), best)
-    best = select_best(monte_carlo_res, best)
-    progress_bar.update(1)
-    i += 1
+    # best = select_best(monte_carlo_res, best)
+    # progress_bar.update(1)
+    # i += 1
   return best
 
 if __name__ == '__main__':
