@@ -1,19 +1,11 @@
-class TechStep:
-  def __init__(self, step) -> None:
-    self.target_power = step['target_power']
-    self.duration = step['duration']
+import shortuuid
+from models.process import TechProcess
 
 class Product:
   def __init__(
       self,
-      id,
-      init_power: float,
-      work_duration: float,
-      steps: list
+      pid
     ):
-    self.id = id
-    self.init_power = init_power
-    self.work_duration = work_duration
-    self.step_count = len(steps)
-    self.steps = [TechStep(x) for x in steps]
-    
+    self.batch_id = shortuuid.uuid()
+    self.process = TechProcess.from_id(pid, self.batch_id)
+    self.batch_name = f'{self.batch_id}_{self.process.id}'
