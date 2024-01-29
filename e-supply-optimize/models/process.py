@@ -3,7 +3,7 @@ import json
 class PowerBlock:
   def __init__(self, order, power, **kwargs):
     self.order = order
-    self.power = power
+    self.power = int(power)
     self.process_ukey = kwargs['ukey']
     self.ukey = f'{kwargs["ukey"]}_{self.order}'
 

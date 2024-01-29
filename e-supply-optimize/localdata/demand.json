@@ -1,34 +1,34 @@
 [
   {
     "pid": 1,
-    "amount": 4
+    "amount": 6
   },
   {
     "pid": 2,
-    "amount": 2
+    "amount": 6
   },
   {
     "pid": 3,
-    "amount": 3
+    "amount": 6
   },
   {
     "pid": 4,
-    "amount": 5
+    "amount": 6
   },
   {
     "pid": 5,
-    "amount": 4
+    "amount": 6
   },
   {
     "pid": 6,
-    "amount": 2
+    "amount": 6
   },
   {
     "pid": 7,
-    "amount": 3
+    "amount": 7
   },
   {
     "pid": 8,
-    "amount": 4
+    "amount": 7
   }
 ]

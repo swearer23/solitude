@@ -18,7 +18,7 @@ best = optimize_electric_cost(
   processes
 )
 
-print(best[0], best[1], best[2])
+# print(best[0], best[1], best[2])
 
 cols = ['ProdID'] + [
   f'day_{i}_hour_{j}'
@@ -27,7 +27,7 @@ cols = ['ProdID'] + [
 ]
 
 df = pd.DataFrame(
-  [[x[0], *x[2]] for x in best[2]],
+  best[2],
   columns=cols
 )
 
