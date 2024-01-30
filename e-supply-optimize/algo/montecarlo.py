@@ -25,9 +25,13 @@ def select_best(monte_carlo_res, best):
     print('峰值电量:', best[0], '总电费：', best[1])
   return best
 
+def optimize_electic_cost_single(hourly_prices, processes):
+  res = run_once((hourly_prices, [processes[0]]))
+  print(res)
+
 def optimize_electric_cost(hourly_prices, processes):
   best = None
-  epoch = 1000
+  epoch = 100
   i = 0
   batch_size = 1000
   progress_bar = tqdm(total=epoch)

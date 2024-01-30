@@ -69,16 +69,16 @@ class MonteCarloMatrix:
   def __montecarlo(self):
     # print(self.matrix)
     cur_cell = self.matrix[self.matrix_index[0], self.matrix_index[1]]
-    cur_cell_price_type = self.hourly_prices[self.pp_index]
+    cur_cell_price_type = self.hourly_prices[self.matrix_index[1]]
     fill_or_not = False
     # print(cur_cell)
     if cur_cell == 0:
       if cur_cell_price_type == PriceType.TROUGH.value:# and self.__yes_or_no_prob(base=1):
         fill_or_not = True
-      elif cur_cell_price_type == PriceType.NORMAL.value and self.__yes_or_no_prob(base=2):
+      elif cur_cell_price_type == PriceType.NORMAL.value:# and self.__yes_or_no_prob(base=2):
         fill_or_not = True
-      elif cur_cell_price_type == PriceType.PEAK.value and self.__yes_or_no_prob(base=3):
-        fill_or_not = True
+      # elif cur_cell_price_type == PriceType.PEAK.value and self.__yes_or_no_prob(base=10):
+      #   fill_or_not = True
     return fill_or_not
   
   def __fill(self):
