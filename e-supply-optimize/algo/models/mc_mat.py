@@ -4,8 +4,9 @@ import pandas as pd
 import numpy as np
 from models.eprice import PriceType
 
-LEAP_PUNISHMENT = 1000
 PEAK_LIMIT = 69000
+GAP_LIMIT = 5
+REVERT_TIME_LIMIT = 1000
 
 class MonteCarloMatrix:
   def __init__(self, hourly_prices, processes):
@@ -15,20 +16,28 @@ class MonteCarloMatrix:
     self.matrix_index = [0, 0]
     self.matrix = np.array([[0] * len(self.hourly_prices)])
     self.process_id = [x.get('id') for x in processes]
+    self.resolved = False
+    self.reverting = (None, 0,)
 
   def next(self):
+    if self.__gap_too_long():
+      self.__revert_cur_line()
     if self.__within_peak_limit() and self.__montecarlo():
       self.__fill()
     self.__move_to_next()
     if self.__is_process_done():
       if self.__all_done():
+        self.resolved = True
         return False
       else:
+        self.__reset_revert()
         self.__append_new_line()
     if self.__out_of_range():
       self.__clear_line()
       self.pp_index = 0
       self.matrix_index[1] = 0
+    if self.reverting[1] > REVERT_TIME_LIMIT:
+      return False
     return True
   
   def get_result(self):
@@ -44,6 +53,29 @@ class MonteCarloMatrix:
   def __is_process_done(self):
     # print(self.pp_index, len(self.processes[self.matrix_index[0]]))
     return self.pp_index >= len(self.processes[self.matrix_index[0]])
+  
+  def __gap_too_long(self):
+    filled_index = self.matrix[self.matrix_index[0], :].nonzero()[-1]
+    if len(filled_index) == 0:
+      return False
+    gap = self.matrix_index[1] - filled_index[-1]
+    if gap > GAP_LIMIT:
+      # print(self.matrix[self.matrix_index[0], :])
+      # print('gap too long', gap, self.matrix_index[1], filled_index[-1])
+      return True
+    return False
+  
+  def __revert_cur_line(self):
+    times = self.reverting[1]
+    self.reverting = (self.process_id[self.matrix_index[0]], times + 1)
+    cur_line_head = self.matrix[self.matrix_index[0], :].nonzero()[0][0]
+    # print(cur_line_head)
+    self.matrix_index[1] = cur_line_head + 1
+    self.pp_index = 0
+    self.matrix[self.matrix_index[0], :] = np.array([0] * len(self.hourly_prices))
+
+  def __reset_revert(self):
+    self.reverting = (None, 0,)
   
   def __out_of_range(self):
     return self.matrix_index[1] >= len(self.hourly_prices)
@@ -77,14 +109,14 @@ class MonteCarloMatrix:
         fill_or_not = True
       elif cur_cell_price_type == PriceType.NORMAL.value:# and self.__yes_or_no_prob(base=2):
         fill_or_not = True
-      # elif cur_cell_price_type == PriceType.PEAK.value and self.__yes_or_no_prob(base=10):
-      #   fill_or_not = True
+      elif cur_cell_price_type == PriceType.PEAK.value and self.__yes_or_no_prob(base=3):
+        fill_or_not = True
     return fill_or_not
   
   def __fill(self):
     self.matrix[self.matrix_index[0], self.matrix_index[1]] = self.processes[self.matrix_index[0]][self.pp_index]
     self.pp_index += 1
-
+  
   def __yes_or_no_prob(self, base=1):
     return randint(0, base) == base
   
@@ -93,7 +125,7 @@ class MonteCarloMatrix:
       self.matrix[j][i] * self.hourly_prices[i]
       for i in range(len(self.hourly_prices))
       for j in range(len(self.matrix))
-      if self.matrix[j][i] > LEAP_PUNISHMENT
+      if self.matrix[j][i] > 0
     ])
   
   def calculate_peak_power(self):
@@ -101,13 +133,13 @@ class MonteCarloMatrix:
       sum([
         self.matrix[j][i]
         for j in range(len(self.matrix))
-        if self.matrix[j][i] > LEAP_PUNISHMENT
+        if self.matrix[j][i] > 0
       ])
       for i in range(len(self.hourly_prices))
     ])
   
   def constrain_power_demand(self):
-    deployed_power = np.sum(self.matrix[self.matrix > LEAP_PUNISHMENT])
+    deployed_power = np.sum(self.matrix[self.matrix > 0])
     planned_power = sum([
       sum([
         self.processes[i][j]
@@ -116,13 +148,12 @@ class MonteCarloMatrix:
       for i in range(len(self.processes))
     ])
     for i in range(len(self.matrix)):
-      if sum(self.matrix[i, :]) != sum(self.processes[i]):
+      if sum([x for x in self.matrix[i, :] if x > 0]) != sum(self.processes[i]):
         print(f'line {i} ========================== {self.process_id[i]}')
         print(sum(self.matrix[i, :]))
         print(sum(self.processes[i]))
         print(self.matrix[i, :])
         print(self.processes[i])
-        exit()
     # print('====================================')
     # print(self.matrix[1, :])
     # print(deployed_power, planned_power)

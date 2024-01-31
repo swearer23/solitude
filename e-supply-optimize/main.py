@@ -16,16 +16,15 @@ processes = [{
 
 hourly_prices = [x.price for x in calendar.slots]
 
+
+
+# TODO: delete this, just for test
+# best = optimize_electic_cost_single(hourly_prices, processes)
 best = optimize_electric_cost(
   hourly_prices,
   processes
 )
-
-# TODO: delete this, just for test
-# best = optimize_electic_cost_single(hourly_prices, processes)
-
 # print(best[0], best[1], best[2])
-
 cols = ['ProdID'] + [
   f'day_{i}_hour_{j}'
   for i in range(1, 32)

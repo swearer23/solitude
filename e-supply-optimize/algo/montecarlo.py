@@ -7,8 +7,12 @@ def run_once(args):
   mc_mat = MonteCarloMatrix(hourly_prices, processes)
   while mc_mat.next():
     continue
-  if mc_mat.constrain_power_demand():
-    return (mc_mat.calculate_peak_power(), mc_mat.calculate_electric_cost(), mc_mat.get_result())
+  if mc_mat.resolved and mc_mat.constrain_power_demand():
+    return (
+      mc_mat.calculate_peak_power(),
+      mc_mat.calculate_electric_cost(),
+      mc_mat.get_result()
+    )
   else:
     return (None, None, None)
 
@@ -26,8 +30,8 @@ def select_best(monte_carlo_res, best):
   return best
 
 def optimize_electic_cost_single(hourly_prices, processes):
-  res = run_once((hourly_prices, [processes[0]]))
-  print(res)
+  res = run_once((hourly_prices, processes))
+  return res
 
 def optimize_electric_cost(hourly_prices, processes):
   best = None

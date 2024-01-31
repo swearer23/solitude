@@ -1,7 +1,6 @@
 import pandas as pd
 from models.calendar import Calendar, PEAK_HOURS, NORMAL_HOURS, TROUGH_HOURS
 from models.eprice import PriceType
-from algo.models.mc_mat import LEAP_PUNISHMENT
 
 class Sheet:
   def __init__(self, calendar: Calendar) -> None:
@@ -29,7 +28,7 @@ class Sheet:
     df = df.set_index('ProdID')
     for col in df.columns:
       for index, cell in df[col].items():
-        if int(cell) > LEAP_PUNISHMENT:
+        if int(cell) > 0:
           day = int(col.split('_')[1])
           hour = int(col.split('_')[3])
           self.fill_cell(index, day, hour, cell)

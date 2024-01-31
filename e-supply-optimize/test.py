@@ -1,27 +1,35 @@
 import numpy as np
 from scipy.optimize import linprog
+from models.process import TechProcess
+
+process = TechProcess.from_id(1, 1)
+process = [pb.power for pb in process.power_line]
+
+# 生产计划
+output_count = 50
 
 # 假设参数
-M = 5  # 反应炉数量
-K = 3  # 工艺种类数量
-Q = 100  # 电费限制
+M = 10  # 反应炉数量
+K = 1  # 工艺种类数量
+Q = 69000 # 电费限制
 
 # 假设的电费单价和工艺耗电量
 c = np.random.rand(744, M)  # 744小时，M个反应炉的电费单价
 d = np.random.rand(K)  # 工艺种类数量
 
 # 电价分段
-p = np.array([1, 1, 1, 1, 1, 1, 2, 2, 2, 3, 3, 2, 2, 2, 3, 3, 3, 3, 2, 2, 2, 2, 1, 1])
+p = np.array([1, 1, 1, 1, 1, 1, 2, 2, 2, 3, 3, 2, 2, 2, 3, 3, 3, 3, 2, 2, 2, 2, 1, 1] * 31)
 
 # 定义目标函数的系数
 c_flat = c.flatten()
 
 # 定义约束矩阵
-A_eq = np.zeros((M * K, 744 * M))
+A_eq = np.zeros((len(p), M))
 for j in range(M):
     for k in range(K):
-        for i in range(744):
-            A_eq[j * K + k, i * M + j] = 1
+        for i in range(len(p)):
+            for p in process:
+                A_eq[j, i] = p
 
 # 定义等式右侧
 b_eq = np.ones(M * K) * 8
@@ -40,7 +48,7 @@ b_ub = np.ones(744) * Q
 x_bounds = [(0, None)] * (744 * M)
 
 # 使用线性规划求解器
-result = linprog(c_flat, A_eq=A_eq, b_eq=b_eq, A_ub=A_ub, b_ub=b_ub, bounds=x_bounds, method='highs')
+result = linprog(p, A_eq=A_eq, b_eq=b_eq, A_ub=A_ub, b_ub=b_ub, bounds=x_bounds, method='highs')
 
 # 输出结果
 x_optimal = result.x.reshape((744, M))
